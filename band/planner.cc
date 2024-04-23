@@ -1,17 +1,3 @@
-// Copyright 2023 Seoul National University
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include "band/planner.h"
 
 #include <fstream>
@@ -32,6 +18,7 @@ namespace band {
 
 Planner::Planner(IEngine& engine) : num_submitted_jobs_(0), engine_(engine) {
   planner_thread_ = std::thread([this] {
+    // 创建并启动一个后台线程 planner_thread_，该线程执行 Plan() 方法。这个方法负责处理和调度作业队列中的作业
     auto status = this->Plan();
     if (!status.ok()) {
       BAND_LOG(LogSeverity::kError, "Planner thread failed: %s",
@@ -45,7 +32,10 @@ Planner::~Planner() {
     BAND_TRACER_DUMP(log_path_);
   }
   planner_safe_bool_.terminate();
+  // 调用 planner_safe_bool_.terminate() 来设置一个安全的终止标志
+  // 确保 Plan() 方法可以安全地结束其循环，准备进行线程的安全退出。
   planner_thread_.join();
+  // 等待后台线程完成，确保所有资源都被适当地清理和同步。
 }
 
 absl::Status Planner::Init(const PlannerConfig& config) {
@@ -90,6 +80,8 @@ absl::Status Planner::Init(const PlannerConfig& config) {
     // fallback subgraphs.
     // Currently, we do not allow using schedulers with different requirements
     // for the fallback subgraphs.
+    // 此函数用来检查所有调度器是否对回退子图有统一的要求。
+    // 当前，不支持使用对回退子图有不同处理要求的调度器。
     if (i == 0) {
       allow_fallback = schedulers_[i]->NeedFallbackSubgraphs();
     } else if (allow_fallback != schedulers_[i]->NeedFallbackSubgraphs()) {
@@ -99,6 +91,7 @@ absl::Status Planner::Init(const PlannerConfig& config) {
   }
 
   // All schedulers must have the same worker type.
+  // 所有调度器必须具有相同的工作器类型
   if (GetWorkerType() == (static_cast<int>(WorkerType::kDeviceQueue) |
                           static_cast<int>(WorkerType::kGlobalQueue))) {
     return absl::InternalError(
@@ -108,6 +101,7 @@ absl::Status Planner::Init(const PlannerConfig& config) {
   if (config.cpu_mask != CPUMaskFlag::kAll) {
     cpu_set_ = BandCPUMaskGetSet(config.cpu_mask);
     need_cpu_update_ = true;
+    // 如果配置中指定了 cpu_mask（CPU掩码），则根据该掩码更新 cpu_set_
   }
 
   return absl::OkStatus();
@@ -124,6 +118,7 @@ absl::Status Planner::AddScheduler(std::unique_ptr<IScheduler> scheduler) {
 }
 
 JobId Planner::EnqueueRequest(Job job, bool push_front) {
+  // push_front 为 true 时，将作业插入到队列的最前面
   return EnqueueBatch({job}, push_front)[0];
 }
 
@@ -132,18 +127,21 @@ std::vector<JobId> Planner::EnqueueBatch(std::vector<Job> jobs,
   std::vector<JobId> job_ids(jobs.size());
   {
     std::unique_lock<std::mutex> request_lock(requests_.mtx);
+    // 确保对请求队列的操作是线程安全的
     auto enqueue_time = time::NowMicros();
     for (int i = 0; i < jobs.size(); i++) {
       Job& job = jobs[i];
       if (job.enqueue_time == 0) {
         // job.enqueue_time may already be set if this model contains a fallback
         // op, in which case we do not overwrite the set value
+        // 如果该模型包含回退操作，则 job.enqueue_time 可能已经设置，此时我们不会覆盖已设置的值
         job.enqueue_time = enqueue_time;
       }
       if (job.job_id == -1) {
         job.job_id = num_submitted_jobs_++;
       }
       job_ids[i] = job.job_id;
+      // 遍历作业列表，为每个作业设置 enqueue_time 和 job_id
     }
 
     auto insert_position =
@@ -190,15 +188,18 @@ void Planner::EnqueueFinishedJob(Job& job) {
   // record finished / failed job
   if (is_finished) {
     jobs_finished_record_[GetJobRecordIndex(job.job_id)] = job;
+    // 将已完成的作业添加到完成记录中
     num_finished_jobs_++;
     end_invoke_.notify_all();
   }
   // make sure to unlock before calling callback to avoid
   // potential recursive locking from client code
+  // 在调用回调之前解锁，以避免来自客户端代码的潜在递归锁定
   finished_lock.unlock();
 
   // report end invoke using callback
   if (job.require_callback && is_finished) {
+    // 如果作业需要回调，并且作业已完成，则使用回调报告结束调用
     std::unique_lock<std::mutex> callback_lock(on_end_request_mtx_);
     for (auto& id_callback : on_end_request_callbacks_) {
       id_callback.second(job.job_id, job.status == JobStatus::kSuccess
@@ -313,6 +314,7 @@ void Planner::CopyToLocalQueues() {
     }  // other else cases should have been caught in Init()
 
     requests.clear();
+    // 完成作业的复制和分配后，释放请求队列的锁
   }
   request_lock.unlock();
 }
@@ -385,6 +387,7 @@ void Planner::UpdateJobScheduleStatus(Job& job, const SubgraphKey& target_key) {
   job.profiled_execution_time = engine_.GetProfiled(target_key);
   job.expected_execution_time = engine_.GetExpected(target_key);
   job.resolved_unit_subgraphs |= target_key.GetUnitIndices();
+  // 更新已解决的单元子图
 
   if (!engine_.IsEnd(target_key)) {
     Job remaining_ops(job.model_id);

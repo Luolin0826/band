@@ -120,11 +120,14 @@ class Engine : public IEngine {
   WorkerWaitingTime GetWorkerWaitingTime() const override;
 //   获取工作器的等待时间
   std::set<WorkerId> GetIdleWorkers() const override;
-//   获取空闲工作器
+//   检查并返回所有当前处于空闲状态的工作器（workers）的索引集合
 
   bool IsBegin(const SubgraphKey& key) const override;
+//   判断子图键是否代表了模型的第一个子图
   bool IsEnd(const SubgraphKey& key) const override;
+//   判断子图键是否代表了模型的最后一个子图
   bool HasSubgraph(const SubgraphKey& key) const override;
+//   这个方法用于检查是否存在给定子图键所指的子图
   void ForEachSubgraph(
       std::function<void(const SubgraphKey&)> visitor) const override;
     //   遍历所有子图，为每个子图执行提供的访问函数

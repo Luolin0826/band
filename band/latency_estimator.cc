@@ -1,17 +1,3 @@
-// Copyright 2023 Seoul National University
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include "band/latency_estimator.h"
 
 #include "absl/strings/str_format.h"
@@ -58,6 +44,21 @@ void LatencyEstimator::UpdateLatency(const SubgraphKey& key, int64_t latency) {
   }
 }
 
+/**
+ * @brief Profiles the model with the given model ID.
+ * 
+ * This function profiles the model with the specified model ID. If the `profile_online_` flag is set to true, 
+ * it pauses the workers, waits for them to finish their current job, and then invokes the target subgraph in 
+ * an isolated thread for profiling. The profiling is done by invoking the subgraph multiple times and measuring 
+ * the average latency. The latency measurements are stored in the `profile_database_` map.
+ * 
+ * If the `profile_online_` flag is set to false, it checks if the engine exists and retrieves the model 
+ * specification for the given model ID. It then attempts to find the profile entries for the model in the 
+ * `model_profile` map and inserts them into the `profile_database_` map.
+ * 
+ * @param model_id The ID of the model to be profiled.
+ * @return absl::Status The status of the profiling operation.
+ */
 absl::Status LatencyEstimator::ProfileModel(ModelId model_id) {
   if (profile_online_) {
     for (WorkerId worker_id = 0; worker_id < engine_->GetNumWorkers();
@@ -68,6 +69,7 @@ absl::Status LatencyEstimator::ProfileModel(ModelId model_id) {
       // wait for workers to finish current job
       worker->Wait();
       // invoke target subgraph in an isolated thread
+      // 在独立线程 (profile_thread) 中执行以下操作，以隔离剖析过程，防止影响主线程
       std::thread profile_thread([&]() {
 
 #if BAND_IS_MOBILE
@@ -229,6 +231,9 @@ LatencyEstimator::JsonToModelProfile(const std::string& model_fname,
       // be able to detect that the model can indeed reuse this profile.
       // An ad-hoc fix would be to add yet another "model name" field,
       // solely for profiling purposes.
+      // // 我们只关注 `model_fname`。
+      // 注意：如果一个模型因为某些原因（比如，同一个模型的两个实例）使用了不同的字符串名作为别名，我们将无法识别该模型实际上可以复用这份性能配置。
+      // 一个临时的解决方案是添加一个额外的“模型名称”字段，专门用于性能分析。
       continue;
     }
 
@@ -260,7 +265,7 @@ LatencyEstimator::JsonToModelProfile(const std::string& model_fname,
 
 Json::Value LatencyEstimator::ProfileToJson() {
   Json::Value name_profile;
-  name_profile["hash"] = GetProfileHash();
+  name_profile["hash"] = Json::Value(static_cast<Json::Value::UInt64>(GetProfileHash()));
   for (auto& pair : profile_database_) {
     SubgraphKey key = pair.first;
     const int model_id = key.GetModelId();
@@ -271,7 +276,7 @@ Json::Value LatencyEstimator::ProfileToJson() {
     if (model_spec && !model_spec->path.empty()) {
       // copy all entries in id_profile --> database_json
       name_profile[model_spec->path][key.GetUnitIndicesString()]
-                  [key.GetWorkerId()] = profiled_latency;
+                  [key.GetWorkerId()] = static_cast<Json::Value::Int64>(profiled_latency);
     } else {
       BAND_LOG(LogSeverity::kError,
                "Cannot find model %d from "
