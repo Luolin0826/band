@@ -1,19 +1,3 @@
-/*
- * Copyright 2023 Seoul National University
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef BAND_PROFILER_H_
 #define BAND_PROFILER_H_
 
@@ -25,11 +9,15 @@ namespace band {
 class Profiler {
  public:
   size_t BeginEvent();
+  // 开始一个新的事件，记录事件开始时的时间点
   void EndEvent(size_t event_handle);
+  // 结束一个已经开始的事件，记录事件结束时的时间点
   size_t GetNumEvents() const;
+  // 获取已记录的事件数量
 
   template <typename T>
   double GetElapsedTimeAt(size_t index) const {
+    // 获取特定事件的持续时间
     static_assert(is_chrono_duration<T>::value,
                   "T must be a std::chrono::duration");
     if (timeline_vector_.size() > index) {
@@ -44,6 +32,7 @@ class Profiler {
 
   template <typename T>
   double GetAverageElapsedTime() const {
+    // 计算所有事件的平均持续时间
     static_assert(is_chrono_duration<T>::value,
                   "T must be a std::chrono::duration");
 

@@ -1,29 +1,15 @@
-/*
- * Copyright 2023 Seoul National University
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef BAND_SCHEDULER_HETEROGENEOUS_EARLIEST_FINISH_TIME_SCHEDULER_H_
 #define BAND_SCHEDULER_HETEROGENEOUS_EARLIEST_FINISH_TIME_SCHEDULER_H_
 
 #include "band/scheduler/scheduler.h"
-
+// HEFT 算法主要考虑每个作业在不同工作器上的预计完成时间，并尝试将作业调度到可以最早完成该作业的工作器上
 namespace band {
 
 class HEFTScheduler : public IScheduler {
  public:
   explicit HEFTScheduler(IEngine& engine, int window_size, bool reserve);
+  // window_size 调度窗口大小 控制决策调度的范围和精度
+  // reserve：一个布尔值，指示是否启用资源预留功能，这可以为关键作业预留计算资源，保证其按时完成
 
   bool Schedule(JobQueue& requests) override;
   bool NeedFallbackSubgraphs() override { return true; }

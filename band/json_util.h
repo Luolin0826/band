@@ -1,19 +1,3 @@
-/*
- * Copyright 2023 Seoul National University
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef BAND_JSON_UTIL_H_
 #define BAND_JSON_UTIL_H_
 
@@ -31,13 +15,17 @@ namespace band {
 namespace json {
 // load data from the given file
 // if there is no such file, then the json object will be empty
+// 文件存在性检查
 Json::Value LoadFromFile(std::string file_path);
 // write json object
+// 写对象
 absl::Status WriteToFile(const Json::Value& json_object, std::string file_path);
 // validate the root, returns true if root is valid and has all required fields
+// 验证根节点，如果根节点有效且具有所有必需字段，则返回true
 bool Validate(const Json::Value& root, std::vector<std::string> required);
 template <typename T>
 bool AssignIfValid(T& lhs, const Json::Value& value, const char* key) {
+  // 赋值验证
   if (!value[key].isNull()) {
     lhs = value[key].as<T>();
     return true;

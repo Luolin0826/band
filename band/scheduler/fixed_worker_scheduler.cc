@@ -1,23 +1,10 @@
-// Copyright 2023 Seoul National University
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include "band/scheduler/fixed_worker_scheduler.h"
 
 namespace band {
 bool FixedWorkerScheduler::Schedule(JobQueue& requests) {
   bool success = true;
   // TODO: fallback subgraphs for FixedDeviceFixedWorkerPlanner?
+  // 待办：为 FixedDeviceFixedWorkerPlanner 设计回退子图方案？
   while (!requests.empty()) {
     Job to_execute = requests.front();
     requests.pop_front();  // erase job
@@ -26,6 +13,9 @@ bool FixedWorkerScheduler::Schedule(JobQueue& requests) {
     // Priority
     // (1) : direct request from the engine
     // (2) : predefined mapping from the config
+    // 优先级
+    // (1) : 直接来自引擎的请求
+    // (2) : 根据配置预设的映射关系
     WorkerId worker_id = to_execute.target_worker_id == -1
                              ? engine_.GetModelWorker(model_id)
                              : to_execute.target_worker_id;

@@ -1,17 +1,3 @@
-// Copyright 2023 Seoul National University
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include "band/tool/benchmark.h"
 
 #include <algorithm>
@@ -77,6 +63,7 @@ absl::Status Benchmark::ModelContext::PrepareInput() {
        batch_index++) {
     for (int input_index = 0; input_index < model_inputs.size();
          input_index++) {
+          // 遍历每个批次（batch_index）和该批次中的每个输入（input_index）
       auto status =
           model_request_inputs[batch_index][input_index]->CopyDataFrom(
               model_inputs[input_index]);
@@ -89,6 +76,7 @@ absl::Status Benchmark::ModelContext::PrepareInput() {
 }
 
 bool Benchmark::ParseArgs(int argc, const char** argv) {
+  // 解析命令行参数来配置基准测试工具
   if (argc < 2) {
     std::cout << "Usage:\n\tbenchmark <config-json-path> [<verbosity> = "
                  "default value: WARNING]"

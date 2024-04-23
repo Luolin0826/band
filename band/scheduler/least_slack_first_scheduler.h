@@ -1,19 +1,3 @@
-/*
- * Copyright 2023 Seoul National University
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef BAND_SCHEDULER_LEAST_SLACK_FIRST_SCHEDULER_H_
 #define BAND_SCHEDULER_LEAST_SLACK_FIRST_SCHEDULER_H_
 
@@ -31,9 +15,12 @@ class LeastSlackFirstScheduler : public IScheduler {
 
  private:
   int64_t GetSlackTime(int64_t current_time, const Job& job);
+  // 计算给定作业的松弛时间，即任务的最后期限与当前时间和预期剩余执行时间之差。
   void SortBySlackTime(JobQueue& requests, int window_size,
                        int64_t current_time);
+                      //  根据作业的松弛时间对请求队列进行排序
   void UpdateExpectedLatency(JobQueue& requests, int window_size);
+  // 更新队列中作业的预期延迟，这通常是基于最短延迟的子图计算得出。
   const int window_size_;
 };
 

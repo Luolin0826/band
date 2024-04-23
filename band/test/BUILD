@@ -1,17 +1,3 @@
-# Copyright 2023 Seoul National University
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 load("//band:band.bzl", "band_cc_android_test", "band_cc_library")
 
 exports_files(glob([
@@ -113,6 +99,7 @@ band_cc_android_test(
     name = "benchmark_test",
     size = "medium",
     srcs = ["tool/benchmark_test.cc"],
+    copts = ["-DBAND_TFLITE"],  # 添加这个选项来定义 BAND_TFLITE
     data = [
         "//band/test:tfl_models",
         "//band/test:benchmark_jsons",
